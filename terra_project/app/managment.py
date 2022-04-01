@@ -1,21 +1,17 @@
-import json
 from flask import Flask, request
 from spartan import Spartan
 import pymongo
 from pymongo import MongoClient
-import requests
 
 
-def get_ip_address():
-    link = "http://ipv4.icanhazip.com"
-  
-    ip = requests.get(link)
-   
-   
+def ip_getter():
+    with open ("ip_file.txt") as file:
+        ip = file.read()
+        return ip 
 
 ### Adds employee to mongo database ###
 def add_employee():
-    ip = get_ip_address()
+    ip = ip_getter()
     cluster = MongoClient(f"mongodb://{ip}:27017")
     db = cluster["spartan"]
     collection = db["spartan_data"]
@@ -78,7 +74,7 @@ def add_employee():
 
 #### Shows specifc Spartan Data ###
 def show_spartan(spartan_id):
-    ip = get_ip_address()
+    ip = ip_getter()
     cluster = MongoClient(f"mongodb://{ip}:27017")
     db = cluster["spartan"]
     collection = db["spartan_data"]
@@ -94,7 +90,7 @@ def show_spartan(spartan_id):
 ### Removes data entry at selected ID ###
 
 def remove_employee(sparta_id):
-    ip = get_ip_address()
+    ip = ip_getter()
     cluster = MongoClient(f"mongodb://{ip}:27017")
     db = cluster["spartan"]
     collection = db["spartan_data"]
@@ -110,7 +106,7 @@ def remove_employee(sparta_id):
 
 ### Shows all Spartan Data ###
 def show_spartan_list_json():
-    ip = get_ip_address()
+    ip = ip_getter()
     cluster = MongoClient(f"mongodb://{ip}:27017")
     db = cluster["spartan"]
     collection = db["spartan_data"]
