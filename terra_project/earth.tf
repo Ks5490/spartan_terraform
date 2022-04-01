@@ -278,3 +278,13 @@ resource "aws_instance" "devops106_terraform_ksliwa_mongodb_tf" {
     "Name" = "devops106_terraform_ksliwa_mongodb_server"
   }
 }
+
+output "database_ip" {
+  value = aws_instance.devops106_terraform_ksliwa_mongodb_tf.public_ip
+}
+
+resource "local_file" "ip_file" {
+  content  = aws_instance.devops106_terraform_ksliwa_mongodb_tf.public_ip
+  filename = "ip_file.txt"
+}
+  
