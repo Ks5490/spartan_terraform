@@ -3,16 +3,27 @@ from spartan import Spartan
 import pymongo
 from pymongo import MongoClient
 
-
-def ip_getter():
-    with open ("ip_file.txt") as file:
+def name_setter():
+    with open ("database.config") as file:
         ip = file.read()
-        return ip 
+        ip.strip()
+        x = "a"
+        for char in ip:
+            if char != "\n":
+                x = x + char 
+
+        y = x.replace("a", "")
+        y.strip()
+    
+        name = f"mongodb://{y}:27017"
+        return name 
+
 
 ### Adds employee to mongo database ###
 def add_employee():
-    ip = ip_getter()
-    cluster = MongoClient(f"mongodb://{ip}:27017")
+    name = name_setter()
+
+    cluster = MongoClient(name)
     db = cluster["spartan"]
     collection = db["spartan_data"]
 
@@ -74,8 +85,8 @@ def add_employee():
 
 #### Shows specifc Spartan Data ###
 def show_spartan(spartan_id):
-    ip = ip_getter()
-    cluster = MongoClient(f"mongodb://{ip}:27017")
+    name = name_setter()
+    cluster = MongoClient(name)
     db = cluster["spartan"]
     collection = db["spartan_data"]
 
@@ -90,8 +101,8 @@ def show_spartan(spartan_id):
 ### Removes data entry at selected ID ###
 
 def remove_employee(sparta_id):
-    ip = ip_getter()
-    cluster = MongoClient(f"mongodb://{ip}:27017")
+    name = name_setter()
+    cluster = MongoClient(name)
     db = cluster["spartan"]
     collection = db["spartan_data"]
    
@@ -106,8 +117,8 @@ def remove_employee(sparta_id):
 
 ### Shows all Spartan Data ###
 def show_spartan_list_json():
-    ip = ip_getter()
-    cluster = MongoClient(f"mongodb://{ip}:27017")
+    name = name_setter()
+    cluster = MongoClient(name)
     db = cluster["spartan"]
     collection = db["spartan_data"]
 
