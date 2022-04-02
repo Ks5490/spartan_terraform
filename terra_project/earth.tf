@@ -250,21 +250,6 @@ resource "aws_security_group" "devops106_terraform_ksliwa_sg_mongodb_tf" {
 }
 
 
-#instance for web app 
-resource "aws_instance" "devops106_terraform_ksliwa_webserver_tf" {
-  ami = "ami-08ca3fed11864d6bb"
-  instance_type = "t2.micro"
-  key_name = "devops106_ksliwa"
-  vpc_security_group_ids = [aws_security_group.devops106_terraform_ksliwa_sg_webserver_tf.id]
-  subnet_id = aws_subnet.devops106_terraform_ksliwa_subnet_webserver_tf.id
-  associate_public_ip_address = true
-
-  tags = {
-    "Name" = "devops106_terraform_ksliwa_webserver"
-  }
-}
-
-
 ## instance for mongodb server 
 resource "aws_instance" "devops106_terraform_ksliwa_mongodb_tf" {
   ami = "ami-08ca3fed11864d6bb"
@@ -277,14 +262,96 @@ resource "aws_instance" "devops106_terraform_ksliwa_mongodb_tf" {
   tags = {
     "Name" = "devops106_terraform_ksliwa_mongodb_server"
   }
+
+  connection {
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+    private_key = file("/home/vagrant/.ssh/devops106_ksliwakk.pem")
+  }
+
+ provisioner "remote-exec" {
+    inline = [
+      "curl -fsSL https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -",
+      "echo \"deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse\" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list",
+      "sudo apt update",
+      "sudo apt install -y mongodb-org",
+      "sudo systemctl start mongod.service",
+      ##"sudo systemctl status mongod",
+      "sudo systemctl enable mongod",
+      "mongo --eval 'db.runCommand({ connectionStatus: 1 })'",
+      "sudo sed -i \"s/bindIp: 127.0.0.1/bindIp: 0.0.0.0/\" /etc/mongod.conf",
+      
+      "sudo systemctl restart mongod.service",
+    ]
+ }
+
 }
 
-output "database_ip" {
-  value = aws_instance.devops106_terraform_ksliwa_mongodb_tf.public_ip
-}
 
-resource "local_file" "ip_file" {
-  content  = aws_instance.devops106_terraform_ksliwa_mongodb_tf.public_ip
-  filename = "ip_file.txt"
-}
+#instance for web app 
+resource "aws_instance" "devops106_terraform_ksliwa_webserver_tf" {
+  ami = "ami-08ca3fed11864d6bb"
+  instance_type = "t2.micro"
+  key_name = "devops106_ksliwa"
+  vpc_security_group_ids = [aws_security_group.devops106_terraform_ksliwa_sg_webserver_tf.id]
+  subnet_id = aws_subnet.devops106_terraform_ksliwa_subnet_webserver_tf.id
+  associate_public_ip_address = true
+
+  tags = {
+    "Name" = "devops106_terraform_ksliwa_webserver"
+  }
+
+  connection {
+    type = "ssh"
+    user = "ubuntu"
+    host = self.public_ip
+    private_key = file("/home/vagrant/.ssh/devops106_ksliwakk.pem")
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get remove -y docker docker-engine docker.io containerd runc",
+      "sudo apt-get update",
+      "sudo apt-get -y install apt-transport-https ca-certificates curl gnupg-agent software-properties-common",
+      "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -",
+      "sudo add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable\"",
+      "sudo apt update",
+      "sudo apt install -y docker-ce docker-ce-cli containerd.io",
+      "sudo usermod -a -G docker ubuntu"
+    ]
+  }
+
+   provisioner "local-exec" {
+    command = "echo ${aws_instance.devops106_terraform_ksliwa_mongodb_tf.public_ip} > ./database.config"
+  }
+
+  provisioner "file" {
+    source = "./database.config"
+    destination = "/home/ubuntu/database.config"
+    
+  }
+
+   provisioner "remote-exec" {
+    inline = [
+      "docker run -d hello-world",
+      "ls -la /home/ubuntu",
+      "cat /home/ubuntu/database.config"
+    ]
+  }    
+
+  provisioner "remote-exec" {
+    inline = [
+      "docker pull ks5490/terraform_spartan_project:0.3 "
+    ]
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "docker run -p 8080:8080 -v /home/ubuntu/database.config:/database.config  ks5490/terraform_spartan_project:0.3 "
+    ]
+  }
   
+}
+
+
